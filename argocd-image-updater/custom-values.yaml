@@ -1,0 +1,36 @@
+crds:
+  install: true
+  keep: true
+
+replicaCount: 1
+
+image:
+  repository: arcloud.pe.jfrog.io/layerx-docker-local/layerx-test # your mirrored image
+  pullPolicy: IfNotPresent # Always makes no sense in an airgap
+  tag: "argocd-image-updater" # pin it
+
+imagePullSecrets:
+  - name: jfrog-pull-secret
+
+createClusterRoles: true # set false if Argo CD apps only live in the argocd namespace and you want least privilege
+
+config:
+  name: argocd-image-updater-config
+  log.level: "info"
+  git.user: "argocd-image-updater"
+  git.email: "image-updater@sheba.gov.il"
+  git.commit-message-template: "chore: update {{.AppName}} image [skip ci]"
+
+  # Registry holding the image you want auto-updated (where Jenkins pushes)
+  registries:
+    - name: JFrog
+      api_url: https://arcloud.pe.jfrog.io
+      prefix: arcloud.pe.jfrog.io
+      ping: yes
+      insecure: no # set yes only if you use an internal CA you can't mount
+      credentials: pullsecret:argocd/jfrog-pull-secret
+      credsexpire: 10h
+
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits: { memory: 256Mi }
